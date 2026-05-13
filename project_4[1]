@@ -1,0 +1,349 @@
+# =========================================================
+# DISEASE PREDICTION SYSTEM USING MACHINE LEARNING
+# =========================================================
+
+# =========================
+# STEP 1 : IMPORT LIBRARIES
+# =========================
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+from sklearn.preprocessing import LabelEncoder
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.naive_bayes import GaussianNB
+from sklearn.svm import SVC
+
+from sklearn.metrics import (
+    accuracy_score,
+    classification_report,
+    confusion_matrix
+)
+
+print("All Libraries Imported Successfully!\n")
+
+
+# =========================
+# STEP 2 : DATA COLLECTION
+# =========================
+
+data = pd.read_csv("c:/users/anush/OneDrive/Documents/disease_prediction_dataset.csv")
+
+print("Dataset Loaded Successfully!\n")
+
+print("First 5 Rows:\n")
+print(data.head())
+
+print("\nDataset Shape:", data.shape)
+
+
+# =========================
+# STEP 3 : DATA PREPROCESSING
+# =========================
+
+print("\nChecking Missing Values:\n")
+print(data.isnull().sum())
+
+# Fill missing values if any
+data = data.ffill()
+
+print("\nMissing Values Handled!")
+
+# -------------------------
+# Encode categorical columns
+# -------------------------
+
+encoder = LabelEncoder()
+
+categorical_columns = [
+    'Gender',
+    'Symptoms',
+    'Medical_History',
+    'Disease'
+]
+
+for col in categorical_columns:
+    data[col] = encoder.fit_transform(data[col])
+
+print("\nCategorical Data Encoded!")
+
+# Normalize numerical columns
+numerical_columns = [
+    'Age',
+    'Blood_Pressure',
+    'Sugar_Level',
+    'Cholesterol'
+]
+
+for col in numerical_columns:
+    data[col] = (
+        data[col] - data[col].min()
+    ) / (
+        data[col].max() - data[col].min()
+    )
+
+print("\nNumerical Data Normalized!")
+
+print("\nPreprocessing Completed Successfully!")
+
+
+# =========================
+# STEP 4 : EXPLORATORY DATA ANALYSIS (EDA)
+# =========================
+
+print("\nGenerating EDA Graphs...")
+
+# ---------------------------------------------------
+# Graph 1 : Disease Distribution
+# ---------------------------------------------------
+
+plt.figure(figsize=(8,5))
+sns.countplot(x='Disease', data=data)
+plt.title("Disease Distribution")
+plt.savefig("disease_distribution.png")
+plt.show()
+
+# ---------------------------------------------------
+# Graph 2 : Age vs Disease
+# ---------------------------------------------------
+
+plt.figure(figsize=(8,5))
+sns.boxplot(x='Disease', y='Age', data=data)
+plt.title("Age vs Disease")
+plt.savefig("age_vs_disease.png")
+plt.show()
+
+# ---------------------------------------------------
+# Graph 3 : Sugar Level Distribution
+# ---------------------------------------------------
+
+plt.figure(figsize=(8,5))
+sns.histplot(data['Sugar_Level'], bins=20, kde=True)
+plt.title("Sugar Level Distribution")
+plt.savefig("sugar_distribution.png")
+plt.show()
+
+# ---------------------------------------------------
+# Graph 4 : Blood Pressure Distribution
+# ---------------------------------------------------
+
+plt.figure(figsize=(8,5))
+sns.histplot(data['Blood_Pressure'], bins=20, kde=True)
+plt.title("Blood Pressure Distribution")
+plt.savefig("bp_distribution.png")
+plt.show()
+
+# ---------------------------------------------------
+# Graph 5 : Cholesterol Distribution
+# ---------------------------------------------------
+
+plt.figure(figsize=(8,5))
+sns.histplot(data['Cholesterol'], bins=20, kde=True)
+plt.title("Cholesterol Distribution")
+plt.savefig("cholesterol_distribution.png")
+plt.show()
+
+# ---------------------------------------------------
+# Graph 6 : Gender vs Disease
+# ---------------------------------------------------
+
+plt.figure(figsize=(8,5))
+sns.countplot(x='Gender', hue='Disease', data=data)
+plt.title("Gender vs Disease")
+plt.savefig("gender_vs_disease.png")
+plt.show()
+
+# ---------------------------------------------------
+# Graph 7 : Correlation Heatmap
+# ---------------------------------------------------
+
+plt.figure(figsize=(10,7))
+
+# Remove Patient_ID before correlation
+heatmap_data = data.drop(columns=['Patient_ID'])
+
+sns.heatmap(
+    heatmap_data.corr(),
+    annot=True,
+    cmap='Blues'
+)
+
+plt.title("Correlation Heatmap")
+plt.savefig("correlation_heatmap.png")
+plt.show()
+
+print("\nEDA Completed Successfully!")
+
+
+# =========================
+# STEP 5 : FEATURE ENGINEERING
+# =========================
+
+print("\nFeature Engineering Started!")
+
+# Remove unnecessary column
+data = data.drop('Patient_ID', axis=1)
+
+# Features and Target
+X = data.drop('Disease', axis=1)
+y = data['Disease']
+
+print("\nFeatures Selected:")
+print(X.columns)
+
+print("\nFeature Engineering Completed!")
+
+
+# =========================
+# STEP 6 : MODEL SELECTION
+# =========================
+
+models = {
+    "Logistic Regression": LogisticRegression(max_iter=500),
+    "Decision Tree": DecisionTreeClassifier(),
+    "Random Forest": RandomForestClassifier(),
+    "Naive Bayes": GaussianNB(),
+    "SVM": SVC()
+}
+
+print("\nModels Selected Successfully!")
+
+
+# =========================
+# STEP 7 : MODEL TRAINING
+# =========================
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X,
+    y,
+    test_size=0.20,
+    random_state=42
+)
+
+print("\nData Split Done!")
+print("Training Data:", X_train.shape)
+print("Testing Data:", X_test.shape)
+
+# Dictionary to store accuracy
+accuracy_results = {}
+
+# Train all models
+for name, model in models.items():
+
+    print("\n===================================")
+    print("Training:", name)
+
+    model.fit(X_train, y_train)
+
+    y_pred = model.predict(X_test)
+
+    accuracy = accuracy_score(y_test, y_pred)
+
+    accuracy_results[name] = accuracy
+
+    print("\nAccuracy:", accuracy)
+
+    print("\nClassification Report:\n")
+    print(classification_report(y_test, y_pred))
+
+print("\nAll Models Trained Successfully!")
+
+
+# =========================
+# STEP 8 : MODEL EVALUATION
+# =========================
+
+# Best Model
+best_model_name = max(accuracy_results, key=accuracy_results.get)
+
+print("\nBest Model:", best_model_name)
+
+best_model = models[best_model_name]
+
+y_pred_best = best_model.predict(X_test)
+
+# ---------------------------------------------------
+# Confusion Matrix
+# ---------------------------------------------------
+
+cm = confusion_matrix(y_test, y_pred_best)
+
+plt.figure(figsize=(7,5))
+sns.heatmap(cm, annot=True, fmt='d', cmap='Blues')
+
+plt.title("Confusion Matrix")
+plt.xlabel("Predicted")
+plt.ylabel("Actual")
+
+plt.savefig("confusion_matrix.png")
+plt.show()
+
+# ---------------------------------------------------
+# Accuracy Comparison Graph
+# ---------------------------------------------------
+
+plt.figure(figsize=(10,5))
+
+plt.bar(
+    accuracy_results.keys(),
+    accuracy_results.values()
+)
+
+plt.title("Model Accuracy Comparison")
+plt.ylabel("Accuracy")
+
+plt.savefig("accuracy_comparison.png")
+plt.show()
+
+# ---------------------------------------------------
+# Actual vs Predicted Graph
+# ---------------------------------------------------
+
+comparison_df = pd.DataFrame({
+    'Actual': y_test.values,
+    'Predicted': y_pred_best
+})
+
+plt.figure(figsize=(8,5))
+
+sns.countplot(
+    x='Actual',
+    hue='Predicted',
+    data=comparison_df
+)
+
+plt.title("Actual vs Predicted Comparison")
+
+plt.savefig("actual_vs_predicted.png")
+plt.show()
+
+print("\nModel Evaluation Completed!")
+
+
+# =========================
+# STEP 9 : DISEASE PREDICTION
+# =========================
+
+print("\n========== DISEASE PREDICTION ==========")
+
+sample_input = X.iloc[0:1]
+
+prediction = best_model.predict(sample_input)
+
+print("\nPredicted Disease Code:", prediction[0])
+
+print("\nPrediction Completed Successfully!")
+
+
+# =========================
+# FINAL MESSAGE
+# =========================
+
+print("\n===================================")
+print("DISEASE PREDICTION SYSTEM COMPLETED")
+print("===================================")
